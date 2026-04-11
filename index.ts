@@ -1,42 +1,123 @@
-import path from "node:path";
-
-import { createRequire } from "node:module";
-const require = createRequire(import.meta.url);
-
-export default function (
-  moduleName: string,
-  dirname: string,
-  absoluteRuntime: string | boolean,
-) {
-  if (absoluteRuntime === false) return moduleName;
-
-  return resolveAbsoluteRuntime(
-    moduleName,
-    path.resolve(dirname, absoluteRuntime === true ? "." : absoluteRuntime),
-  );
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  username?: string;
+  age?: number;
+  gender?: string;
+  marital_status?: string;
+  faculdade_id?: string;
+  faculdade_name?: string;
+  campus_id?: string;
+  campus_name?: string;
+  curso_id?: string;
+  curso_name?: string;
+  ra?: string;
+  photo_url?: string;
+  star_rating?: number;
+  notifications_enabled?: boolean;
+  created_at: string;
 }
 
-function resolveAbsoluteRuntime(moduleName: string, dirname: string) {
-  try {
-    return path
-      .dirname(
-        require.resolve(`${moduleName}/package.json`, { paths: [dirname] }),
-      )
-      .replace(/\\/g, "/");
-  } catch (err) {
-    if (err.code !== "MODULE_NOT_FOUND") throw err;
-
-    throw Object.assign(
-      new Error(`Failed to resolve "${moduleName}" relative to "${dirname}"`),
-      {
-        code: "BABEL_RUNTIME_NOT_FOUND",
-        runtime: moduleName,
-        dirname,
-      },
-    );
-  }
+export interface Post {
+  id: string;
+  user_id: string;
+  author_name?: string;
+  author_photo?: string;
+  author_username?: string;
+  author_star?: number;
+  title?: string;
+  content?: string;
+  category: string;
+  anonimo: boolean;
+  upvotes: number;
+  downvotes: number;
+  comment_count: number;
+  file_urls: string[];
+  created_at: string;
+  user_vote?: string;
+  assunto?: string;
+  urgencia?: string;
+  legenda?: string;
+  localizacao?: string;
+  marcacoes?: string[];
+  titulo_vaga?: string;
+  empresa?: string;
+  descricao_vaga?: string;
+  requisitos?: string;
+  beneficios?: string;
+  salario?: string;
+  tipo_contrato?: string;
+  curso?: string;
+  materia?: string;
+  nivel_beleza?: number;
 }
 
-export function resolveFSPath(path: string) {
-  return require.resolve(path).replace(/\\/g, "/");
+export interface Comment {
+  id: string;
+  post_id: string;
+  user_id: string;
+  author_name: string;
+  author_username?: string;
+  author_photo?: string;
+  content: string;
+  created_at: string;
+}
+
+export interface Faculdade {
+  id: string;
+  name: string;
+}
+
+export interface Campus {
+  id: string;
+  faculdade_id: string;
+  name: string;
+}
+
+export interface Curso {
+  id: string;
+  campus_id: string;
+  name: string;
+}
+
+export interface Notification {
+  id: string;
+  user_id: string;
+  title: string;
+  message: string;
+  read: boolean;
+  created_at: string;
+}
+
+export interface ProvaAnalysis {
+  resumo: string;
+  topicos_importantes: string[];
+  questoes: Question[];
+}
+
+export interface Question {
+  tipo: 'multipla_escolha' | 'verdadeiro_falso' | 'discursiva';
+  nivel: 'facil' | 'medio' | 'dificil';
+  pergunta: string;
+  opcoes?: string[];
+  resposta_correta?: string | boolean;
+  resposta_modelo?: string;
+  explicacao?: string;
+}
+
+export interface Simulado {
+  id: string;
+  user_id: string;
+  questoes: Question[];
+  respostas: any[];
+  score: number;
+  created_at: string;
+}
+
+export interface UserStats {
+  total_simulados: number;
+  taxa_acerto: number;
+  total_posts: number;
+  total_upvotes_received: number;
 }
