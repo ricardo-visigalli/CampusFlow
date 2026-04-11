@@ -1,40 +1,23 @@
 /**
- * @fileoverview Types for object-schema package.
+ * @fileoverview Types for the config-array package.
+ * @author Nicholas C. Zakas
  */
-/**
- * Built-in validation strategies.
- */
-export type BuiltInValidationStrategy = "array" | "boolean" | "number" | "object" | "object?" | "string" | "string!";
-/**
- * Built-in merge strategies.
- */
-export type BuiltInMergeStrategy = "assign" | "overwrite" | "replace";
-/**
- * Property definition.
- */
-export interface PropertyDefinition {
+export interface ConfigObject {
     /**
-     * Indicates if the property is required.
+     * The base path for files and ignores.
      */
-    required: boolean;
+    basePath?: string;
     /**
-     * The other properties that must be present when this property is used.
+     * The files to include.
      */
-    requires?: string[];
+    files?: string[];
     /**
-     * The strategy to merge the property.
+     * The files to exclude.
      */
-    merge: BuiltInMergeStrategy | ((target: any, source: any) => any);
+    ignores?: string[];
     /**
-     * The strategy to validate the property.
+     * The name of the config object.
      */
-    validate: BuiltInValidationStrategy | ((value: any) => void);
-    /**
-     * The schema for the object value of this property.
-     */
-    schema?: ObjectDefinition;
+    name?: string;
+    [key: string]: unknown;
 }
-/**
- * Object definition.
- */
-export type ObjectDefinition = Record<string, PropertyDefinition>;
