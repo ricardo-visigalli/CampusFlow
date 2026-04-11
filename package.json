@@ -1,31 +1,23 @@
 {
-  "name": "@babel/helpers",
-  "version": "7.27.6",
-  "description": "Collection of helper functions used by Babel transforms.",
-  "author": "The Babel Team (https://babel.dev/team)",
-  "homepage": "https://babel.dev/docs/en/next/babel-helpers",
+  "name": "@babel/plugin-syntax-async-generators",
+  "version": "7.8.4",
+  "description": "Allow parsing of async generator functions",
+  "repository": "https://github.com/babel/babel/tree/master/packages/babel-plugin-syntax-async-generators",
   "license": "MIT",
   "publishConfig": {
     "access": "public"
   },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/babel/babel.git",
-    "directory": "packages/babel-helpers"
-  },
-  "main": "./lib/index.js",
+  "main": "lib/index.js",
+  "keywords": [
+    "babel-plugin"
+  ],
   "dependencies": {
-    "@babel/template": "^7.27.2",
-    "@babel/types": "^7.27.6"
+    "@babel/helper-plugin-utils": "^7.8.0"
+  },
+  "peerDependencies": {
+    "@babel/core": "^7.0.0-0"
   },
   "devDependencies": {
-    "@babel/generator": "^7.27.5",
-    "@babel/helper-plugin-test-runner": "^7.27.1",
-    "@babel/parser": "^7.27.5",
-    "regenerator-runtime": "^0.14.0"
-  },
-  "engines": {
-    "node": ">=6.9.0"
-  },
-  "type": "commonjs"
+    "@babel/core": "^7.8.0"
+  }
 }
