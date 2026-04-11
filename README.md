@@ -1,19 +1,19 @@
-# @babel/code-frame
+# @babel/plugin-transform-object-rest-spread
 
-> Generate errors that contain a code frame that point to source locations.
+> Compile object rest and spread to ES5
 
-See our website [@babel/code-frame](https://babeljs.io/docs/babel-code-frame) for more information.
+See our website [@babel/plugin-transform-object-rest-spread](https://babeljs.io/docs/babel-plugin-transform-object-rest-spread) for more information.
 
 ## Install
 
 Using npm:
 
 ```sh
-npm install --save-dev @babel/code-frame
+npm install --save-dev @babel/plugin-transform-object-rest-spread
 ```
 
 or using yarn:
 
 ```sh
-yarn add @babel/code-frame --dev
+yarn add @babel/plugin-transform-object-rest-spread --dev
 ```
