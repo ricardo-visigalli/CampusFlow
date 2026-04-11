@@ -1,13 +1,20 @@
-"use strict";
+import assign from './assign';
+/**
+ * @private
+ * simple class inheritance
+ * @param {Function} child
+ * @param {Function} base
+ * @param {Object} [properties]
+ */
+export default function inherit(child, base, properties) {
+  let baseP = base.prototype;
+  let childP;
 
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = inherit;
-function inherit(key, child, parent) {
-  if (child && parent) {
-    child[key] = Array.from(new Set([].concat(child[key], parent[key]).filter(Boolean)));
+  childP = child.prototype = Object.create(baseP);
+  childP.constructor = child;
+  childP._super = baseP;
+
+  if (properties) {
+    assign(childP, properties);
   }
 }
-
-//# sourceMappingURL=inherit.js.map

@@ -1,16 +1,13 @@
-"use strict";
+/* eslint-disable no-new-func, no-nested-ternary */
 
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = _default;
-exports.resolveFSPath = resolveFSPath;
-function _default(moduleName, dirname, absoluteRuntime) {
-  if (absoluteRuntime === false) return moduleName;
-  resolveFSPath();
-}
-function resolveFSPath() {
-  throw new Error("The 'absoluteRuntime' option is not supported when using @babel/standalone.");
-}
+let win;
 
-//# sourceMappingURL=browser.js.map
+if (typeof window === "undefined") {
+	// window is undefined in node.js
+	win = {};
+} else {
+	win = window;
+}
+/* eslint-enable no-new-func, no-nested-ternary */
+
+export {win as window};
