@@ -1,13 +1,19 @@
-> Why do I have a folder named ".expo" in my project?
+# @babel/generator
 
-The ".expo" folder is created when an Expo project is started using "expo start" command.
+> Turns an AST into code.
 
-> What do the files contain?
+See our website [@babel/generator](https://babeljs.io/docs/babel-generator) for more information or the [issues](https://github.com/babel/babel/issues?utf8=%E2%9C%93&q=is%3Aissue+label%3A%22pkg%3A%20generator%22+is%3Aopen) associated with this package.
 
-- "devices.json": contains information about devices that have recently opened this project. This is used to populate the "Development sessions" list in your development builds.
-- "settings.json": contains the server configuration that is used to serve the application manifest.
+## Install
 
-> Should I commit the ".expo" folder?
+Using npm:
 
-No, you should not share the ".expo" folder. It does not contain any information that is relevant for other developers working on the project, it is specific to your machine.
-Upon project creation, the ".expo" folder is already added to your ".gitignore" file.
+```sh
+npm install --save-dev @babel/generator
+```
+
+or using yarn:
+
+```sh
+yarn add @babel/generator --dev
+```
