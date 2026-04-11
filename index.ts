@@ -1,29 +1,42 @@
-type indexBrowserType = typeof import("./index-browser");
-type indexType = typeof import("./index");
+import path from "node:path";
 
-// Kind of gross, but essentially asserting that the exports of this module are the same as the
-// exports of index-browser, since this file may be replaced at bundle time with index-browser.
-({}) as any as indexBrowserType as indexType;
+import { createRequire } from "node:module";
+const require = createRequire(import.meta.url);
 
-export { findPackageData } from "./package.ts";
+export default function (
+  moduleName: string,
+  dirname: string,
+  absoluteRuntime: string | boolean,
+) {
+  if (absoluteRuntime === false) return moduleName;
 
-export {
-  findConfigUpwards,
-  findRelativeConfig,
-  findRootConfig,
-  loadConfig,
-  resolveShowConfigPath,
-  ROOT_CONFIG_FILENAMES,
-} from "./configuration.ts";
-export type {
-  ConfigFile,
-  IgnoreFile,
-  RelativeConfig,
-  FilePackageData,
-} from "./types.ts";
-export {
-  loadPlugin,
-  loadPreset,
-  resolvePlugin,
-  resolvePreset,
-} from "./plugins.ts";
+  return resolveAbsoluteRuntime(
+    moduleName,
+    path.resolve(dirname, absoluteRuntime === true ? "." : absoluteRuntime),
+  );
+}
+
+function resolveAbsoluteRuntime(moduleName: string, dirname: string) {
+  try {
+    return path
+      .dirname(
+        require.resolve(`${moduleName}/package.json`, { paths: [dirname] }),
+      )
+      .replace(/\\/g, "/");
+  } catch (err) {
+    if (err.code !== "MODULE_NOT_FOUND") throw err;
+
+    throw Object.assign(
+      new Error(`Failed to resolve "${moduleName}" relative to "${dirname}"`),
+      {
+        code: "BABEL_RUNTIME_NOT_FOUND",
+        runtime: moduleName,
+        dirname,
+      },
+    );
+  }
+}
+
+export function resolveFSPath(path: string) {
+  return require.resolve(path).replace(/\\/g, "/");
+}
