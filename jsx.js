@@ -1,124 +1,22 @@
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.JSXAttribute = JSXAttribute;
-exports.JSXClosingElement = JSXClosingElement;
-exports.JSXClosingFragment = JSXClosingFragment;
-exports.JSXElement = JSXElement;
-exports.JSXEmptyExpression = JSXEmptyExpression;
-exports.JSXExpressionContainer = JSXExpressionContainer;
-exports.JSXFragment = JSXFragment;
-exports.JSXIdentifier = JSXIdentifier;
-exports.JSXMemberExpression = JSXMemberExpression;
-exports.JSXNamespacedName = JSXNamespacedName;
-exports.JSXOpeningElement = JSXOpeningElement;
-exports.JSXOpeningFragment = JSXOpeningFragment;
-exports.JSXSpreadAttribute = JSXSpreadAttribute;
-exports.JSXSpreadChild = JSXSpreadChild;
-exports.JSXText = JSXText;
-function JSXAttribute(node) {
-  this.print(node.name);
-  if (node.value) {
-    this.tokenChar(61);
-    this.print(node.value);
+var REACT_ELEMENT_TYPE;
+function _createRawReactElement(e, r, E, l) {
+  REACT_ELEMENT_TYPE || (REACT_ELEMENT_TYPE = "function" == typeof Symbol && Symbol["for"] && Symbol["for"]("react.element") || 60103);
+  var o = e && e.defaultProps,
+    n = arguments.length - 3;
+  if (r || 0 === n || (r = {
+    children: void 0
+  }), 1 === n) r.children = l;else if (n > 1) {
+    for (var t = Array(n), f = 0; f < n; f++) t[f] = arguments[f + 3];
+    r.children = t;
   }
+  if (r && o) for (var i in o) void 0 === r[i] && (r[i] = o[i]);else r || (r = o || {});
+  return {
+    $$typeof: REACT_ELEMENT_TYPE,
+    type: e,
+    key: void 0 === E ? null : "" + E,
+    ref: null,
+    props: r,
+    _owner: null
+  };
 }
-function JSXIdentifier(node) {
-  this.word(node.name);
-}
-function JSXNamespacedName(node) {
-  this.print(node.namespace);
-  this.tokenChar(58);
-  this.print(node.name);
-}
-function JSXMemberExpression(node) {
-  this.print(node.object);
-  this.tokenChar(46);
-  this.print(node.property);
-}
-function JSXSpreadAttribute(node) {
-  this.tokenChar(123);
-  this.token("...");
-  this.print(node.argument);
-  this.rightBrace(node);
-}
-function JSXExpressionContainer(node) {
-  this.tokenChar(123);
-  this.print(node.expression);
-  this.rightBrace(node);
-}
-function JSXSpreadChild(node) {
-  this.tokenChar(123);
-  this.token("...");
-  this.print(node.expression);
-  this.rightBrace(node);
-}
-function JSXText(node) {
-  const raw = this.getPossibleRaw(node);
-  if (raw !== undefined) {
-    this.token(raw, true);
-  } else {
-    this.token(node.value, true);
-  }
-}
-function JSXElement(node) {
-  const open = node.openingElement;
-  this.print(open);
-  if (open.selfClosing) return;
-  this.indent();
-  for (const child of node.children) {
-    this.print(child);
-  }
-  this.dedent();
-  this.print(node.closingElement);
-}
-function spaceSeparator() {
-  this.space();
-}
-function JSXOpeningElement(node) {
-  this.tokenChar(60);
-  this.print(node.name);
-  if (node.typeArguments) {
-    this.print(node.typeArguments);
-  }
-  this.print(node.typeParameters);
-  if (node.attributes.length > 0) {
-    this.space();
-    this.printJoin(node.attributes, undefined, undefined, spaceSeparator);
-  }
-  if (node.selfClosing) {
-    this.space();
-    this.tokenChar(47);
-  }
-  this.tokenChar(62);
-}
-function JSXClosingElement(node) {
-  this.tokenChar(60);
-  this.tokenChar(47);
-  this.print(node.name);
-  this.tokenChar(62);
-}
-function JSXEmptyExpression() {
-  this.printInnerComments();
-}
-function JSXFragment(node) {
-  this.print(node.openingFragment);
-  this.indent();
-  for (const child of node.children) {
-    this.print(child);
-  }
-  this.dedent();
-  this.print(node.closingFragment);
-}
-function JSXOpeningFragment() {
-  this.tokenChar(60);
-  this.tokenChar(62);
-}
-function JSXClosingFragment() {
-  this.token("</");
-  this.tokenChar(62);
-}
-
-//# sourceMappingURL=jsx.js.map
+module.exports = _createRawReactElement, module.exports.__esModule = true, module.exports["default"] = module.exports;
