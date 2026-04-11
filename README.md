@@ -1,19 +1,19 @@
-# @babel/runtime
+# @babel/traverse
 
-> babel's modular runtime helpers
+> The Babel Traverse module maintains the overall tree state, and is responsible for replacing, removing, and adding nodes
 
-See our website [@babel/runtime](https://babeljs.io/docs/babel-runtime) for more information.
+See our website [@babel/traverse](https://babeljs.io/docs/babel-traverse) for more information or the [issues](https://github.com/babel/babel/issues?utf8=%E2%9C%93&q=is%3Aissue+label%3A%22pkg%3A%20traverse%22+is%3Aopen) associated with this package.
 
 ## Install
 
 Using npm:
 
 ```sh
-npm install --save @babel/runtime
+npm install --save-dev @babel/traverse
 ```
 
 or using yarn:
 
 ```sh
-yarn add @babel/runtime
+yarn add @babel/traverse --dev
 ```

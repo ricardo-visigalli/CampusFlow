@@ -1,40 +1,22 @@
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = regeneratorDefine;
-function regeneratorDefine(obj, key, value, noFlags) {
-  var define = Object.defineProperty;
+function _regeneratorDefine(e, r, n, t) {
+  var i = Object.defineProperty;
   try {
-    define({}, "", {});
-  } catch (_) {
-    define = 0;
+    i({}, "", {});
+  } catch (e) {
+    i = 0;
   }
-  exports.default = regeneratorDefine = function (obj, key, value, noFlags) {
-    if (!key) {
-      function defineIteratorMethod(method, i) {
-        regeneratorDefine(obj, method, function (arg) {
-          return this._invoke(method, i, arg);
-        });
-      }
-      defineIteratorMethod("next", 0);
-      defineIteratorMethod("throw", 1);
-      defineIteratorMethod("return", 2);
-    } else {
-      if (define) {
-        define(obj, key, {
-          value: value,
-          enumerable: !noFlags,
-          configurable: !noFlags,
-          writable: !noFlags
-        });
-      } else {
-        obj[key] = value;
-      }
+  _regeneratorDefine = function regeneratorDefine(e, r, n, t) {
+    function o(r, n) {
+      _regeneratorDefine(e, r, function (e) {
+        return this._invoke(r, n, e);
+      });
     }
-  };
-  regeneratorDefine(obj, key, value, noFlags);
+    r ? i ? i(e, r, {
+      value: n,
+      enumerable: !t,
+      configurable: !t,
+      writable: !t
+    }) : e[r] = n : (o("next", 0), o("throw", 1), o("return", 2));
+  }, _regeneratorDefine(e, r, n, t);
 }
-
-//# sourceMappingURL=regeneratorDefine.js.map
+export { _regeneratorDefine as default };
