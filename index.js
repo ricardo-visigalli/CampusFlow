@@ -1,216 +1,249 @@
-'use strict';
+"use strict";
 
-Object.defineProperty(exports, '__esModule', { value: true });
-
-var picocolors = require('picocolors');
-var jsTokens = require('js-tokens');
-var helperValidatorIdentifier = require('@babel/helper-validator-identifier');
-
-function isColorSupported() {
-  return (typeof process === "object" && (process.env.FORCE_COLOR === "0" || process.env.FORCE_COLOR === "false") ? false : picocolors.isColorSupported
-  );
-}
-const compose = (f, g) => v => f(g(v));
-function buildDefs(colors) {
-  return {
-    keyword: colors.cyan,
-    capitalized: colors.yellow,
-    jsxIdentifier: colors.yellow,
-    punctuator: colors.yellow,
-    number: colors.magenta,
-    string: colors.green,
-    regex: colors.magenta,
-    comment: colors.gray,
-    invalid: compose(compose(colors.white, colors.bgRed), colors.bold),
-    gutter: colors.gray,
-    marker: compose(colors.red, colors.bold),
-    message: compose(colors.red, colors.bold),
-    reset: colors.reset
-  };
-}
-const defsOn = buildDefs(picocolors.createColors(true));
-const defsOff = buildDefs(picocolors.createColors(false));
-function getDefs(enabled) {
-  return enabled ? defsOn : defsOff;
-}
-
-const sometimesKeywords = new Set(["as", "async", "from", "get", "of", "set"]);
-const NEWLINE$1 = /\r\n|[\n\r\u2028\u2029]/;
-const BRACKET = /^[()[\]{}]$/;
-let tokenize;
-{
-  const JSX_TAG = /^[a-z][\w-]*$/i;
-  const getTokenType = function (token, offset, text) {
-    if (token.type === "name") {
-      if (helperValidatorIdentifier.isKeyword(token.value) || helperValidatorIdentifier.isStrictReservedWord(token.value, true) || sometimesKeywords.has(token.value)) {
-        return "keyword";
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+Object.defineProperty(exports, "FEATURES", {
+  enumerable: true,
+  get: function () {
+    return _features.FEATURES;
+  }
+});
+Object.defineProperty(exports, "buildCheckInRHS", {
+  enumerable: true,
+  get: function () {
+    return _fields.buildCheckInRHS;
+  }
+});
+exports.createClassFeaturePlugin = createClassFeaturePlugin;
+Object.defineProperty(exports, "enableFeature", {
+  enumerable: true,
+  get: function () {
+    return _features.enableFeature;
+  }
+});
+Object.defineProperty(exports, "injectInitialization", {
+  enumerable: true,
+  get: function () {
+    return _misc.injectInitialization;
+  }
+});
+var _core = require("@babel/core");
+var _semver = require("semver");
+var _fields = require("./fields.js");
+var _decorators = require("./decorators.js");
+var _decorators2 = require("./decorators-2018-09.js");
+var _misc = require("./misc.js");
+var _features = require("./features.js");
+var _typescript = require("./typescript.js");
+const versionKey = "@babel/plugin-class-features/version";
+function createClassFeaturePlugin({
+  name,
+  feature,
+  loose,
+  manipulateOptions,
+  api,
+  inherits,
+  decoratorVersion
+}) {
+  var _api$assumption;
+  if (feature & _features.FEATURES.decorators) {
+    {
+      if (decoratorVersion === "2023-11" || decoratorVersion === "2023-05" || decoratorVersion === "2023-01" || decoratorVersion === "2022-03" || decoratorVersion === "2021-12") {
+        return (0, _decorators.default)(api, {
+          loose
+        }, decoratorVersion, inherits);
       }
-      if (JSX_TAG.test(token.value) && (text[offset - 1] === "<" || text.slice(offset - 2, offset) === "</")) {
-        return "jsxIdentifier";
-      }
-      if (token.value[0] !== token.value[0].toLowerCase()) {
-        return "capitalized";
-      }
-    }
-    if (token.type === "punctuator" && BRACKET.test(token.value)) {
-      return "bracket";
-    }
-    if (token.type === "invalid" && (token.value === "@" || token.value === "#")) {
-      return "punctuator";
-    }
-    return token.type;
-  };
-  tokenize = function* (text) {
-    let match;
-    while (match = jsTokens.default.exec(text)) {
-      const token = jsTokens.matchToToken(match);
-      yield {
-        type: getTokenType(token, match.index, text),
-        value: token.value
-      };
-    }
-  };
-}
-function highlight(text) {
-  if (text === "") return "";
-  const defs = getDefs(true);
-  let highlighted = "";
-  for (const {
-    type,
-    value
-  } of tokenize(text)) {
-    if (type in defs) {
-      highlighted += value.split(NEWLINE$1).map(str => defs[type](str)).join("\n");
-    } else {
-      highlighted += value;
     }
   }
-  return highlighted;
-}
-
-let deprecationWarningShown = false;
-const NEWLINE = /\r\n|[\n\r\u2028\u2029]/;
-function getMarkerLines(loc, source, opts) {
-  const startLoc = Object.assign({
-    column: 0,
-    line: -1
-  }, loc.start);
-  const endLoc = Object.assign({}, startLoc, loc.end);
-  const {
-    linesAbove = 2,
-    linesBelow = 3
-  } = opts || {};
-  const startLine = startLoc.line;
-  const startColumn = startLoc.column;
-  const endLine = endLoc.line;
-  const endColumn = endLoc.column;
-  let start = Math.max(startLine - (linesAbove + 1), 0);
-  let end = Math.min(source.length, endLine + linesBelow);
-  if (startLine === -1) {
-    start = 0;
+  {
+    api != null ? api : api = {
+      assumption: () => void 0
+    };
   }
-  if (endLine === -1) {
-    end = source.length;
+  const setPublicClassFields = api.assumption("setPublicClassFields");
+  const privateFieldsAsSymbols = api.assumption("privateFieldsAsSymbols");
+  const privateFieldsAsProperties = api.assumption("privateFieldsAsProperties");
+  const noUninitializedPrivateFieldAccess = (_api$assumption = api.assumption("noUninitializedPrivateFieldAccess")) != null ? _api$assumption : false;
+  const constantSuper = api.assumption("constantSuper");
+  const noDocumentAll = api.assumption("noDocumentAll");
+  if (privateFieldsAsProperties && privateFieldsAsSymbols) {
+    throw new Error(`Cannot enable both the "privateFieldsAsProperties" and ` + `"privateFieldsAsSymbols" assumptions as the same time.`);
   }
-  const lineDiff = endLine - startLine;
-  const markerLines = {};
-  if (lineDiff) {
-    for (let i = 0; i <= lineDiff; i++) {
-      const lineNumber = i + startLine;
-      if (!startColumn) {
-        markerLines[lineNumber] = true;
-      } else if (i === 0) {
-        const sourceLength = source[lineNumber - 1].length;
-        markerLines[lineNumber] = [startColumn, sourceLength - startColumn + 1];
-      } else if (i === lineDiff) {
-        markerLines[lineNumber] = [0, endColumn];
-      } else {
-        const sourceLength = source[lineNumber - i].length;
-        markerLines[lineNumber] = [0, sourceLength];
-      }
+  const privateFieldsAsSymbolsOrProperties = privateFieldsAsProperties || privateFieldsAsSymbols;
+  if (loose === true) {
+    const explicit = [];
+    if (setPublicClassFields !== undefined) {
+      explicit.push(`"setPublicClassFields"`);
     }
-  } else {
-    if (startColumn === endColumn) {
-      if (startColumn) {
-        markerLines[startLine] = [startColumn, 0];
-      } else {
-        markerLines[startLine] = true;
-      }
-    } else {
-      markerLines[startLine] = [startColumn, endColumn - startColumn];
+    if (privateFieldsAsProperties !== undefined) {
+      explicit.push(`"privateFieldsAsProperties"`);
+    }
+    if (privateFieldsAsSymbols !== undefined) {
+      explicit.push(`"privateFieldsAsSymbols"`);
+    }
+    if (explicit.length !== 0) {
+      console.warn(`[${name}]: You are using the "loose: true" option and you are` + ` explicitly setting a value for the ${explicit.join(" and ")}` + ` assumption${explicit.length > 1 ? "s" : ""}. The "loose" option` + ` can cause incompatibilities with the other class features` + ` plugins, so it's recommended that you replace it with the` + ` following top-level option:\n` + `\t"assumptions": {\n` + `\t\t"setPublicClassFields": true,\n` + `\t\t"privateFieldsAsSymbols": true\n` + `\t}`);
     }
   }
   return {
-    start,
-    end,
-    markerLines
-  };
-}
-function codeFrameColumns(rawLines, loc, opts = {}) {
-  const shouldHighlight = opts.forceColor || isColorSupported() && opts.highlightCode;
-  const defs = getDefs(shouldHighlight);
-  const lines = rawLines.split(NEWLINE);
-  const {
-    start,
-    end,
-    markerLines
-  } = getMarkerLines(loc, lines, opts);
-  const hasColumns = loc.start && typeof loc.start.column === "number";
-  const numberMaxWidth = String(end).length;
-  const highlightedLines = shouldHighlight ? highlight(rawLines) : rawLines;
-  let frame = highlightedLines.split(NEWLINE, end).slice(start, end).map((line, index) => {
-    const number = start + 1 + index;
-    const paddedNumber = ` ${number}`.slice(-numberMaxWidth);
-    const gutter = ` ${paddedNumber} |`;
-    const hasMarker = markerLines[number];
-    const lastMarkerLine = !markerLines[number + 1];
-    if (hasMarker) {
-      let markerLine = "";
-      if (Array.isArray(hasMarker)) {
-        const markerSpacing = line.slice(0, Math.max(hasMarker[0] - 1, 0)).replace(/[^\t]/g, " ");
-        const numberOfMarkers = hasMarker[1] || 1;
-        markerLine = ["\n ", defs.gutter(gutter.replace(/\d/g, " ")), " ", markerSpacing, defs.marker("^").repeat(numberOfMarkers)].join("");
-        if (lastMarkerLine && opts.message) {
-          markerLine += " " + defs.message(opts.message);
+    name,
+    manipulateOptions,
+    inherits,
+    pre(file) {
+      (0, _features.enableFeature)(file, feature, loose);
+      {
+        if (typeof file.get(versionKey) === "number") {
+          file.set(versionKey, "7.27.1");
+          return;
         }
       }
-      return [defs.marker(">"), defs.gutter(gutter), line.length > 0 ? ` ${line}` : "", markerLine].join("");
-    } else {
-      return ` ${defs.gutter(gutter)}${line.length > 0 ? ` ${line}` : ""}`;
-    }
-  }).join("\n");
-  if (opts.message && !hasColumns) {
-    frame = `${" ".repeat(numberMaxWidth + 1)}${opts.message}\n${frame}`;
-  }
-  if (shouldHighlight) {
-    return defs.reset(frame);
-  } else {
-    return frame;
-  }
-}
-function index (rawLines, lineNumber, colNumber, opts = {}) {
-  if (!deprecationWarningShown) {
-    deprecationWarningShown = true;
-    const message = "Passing lineNumber and colNumber is deprecated to @babel/code-frame. Please use `codeFrameColumns`.";
-    if (process.emitWarning) {
-      process.emitWarning(message, "DeprecationWarning");
-    } else {
-      const deprecationError = new Error(message);
-      deprecationError.name = "DeprecationWarning";
-      console.warn(new Error(message));
-    }
-  }
-  colNumber = Math.max(colNumber, 0);
-  const location = {
-    start: {
-      column: colNumber,
-      line: lineNumber
+      if (!file.get(versionKey) || _semver.lt(file.get(versionKey), "7.27.1")) {
+        file.set(versionKey, "7.27.1");
+      }
+    },
+    visitor: {
+      Class(path, {
+        file
+      }) {
+        if (file.get(versionKey) !== "7.27.1") return;
+        if (!(0, _features.shouldTransform)(path, file)) return;
+        const pathIsClassDeclaration = path.isClassDeclaration();
+        if (pathIsClassDeclaration) (0, _typescript.assertFieldTransformed)(path);
+        const loose = (0, _features.isLoose)(file, feature);
+        let constructor;
+        const isDecorated = (0, _decorators.hasDecorators)(path.node);
+        const props = [];
+        const elements = [];
+        const computedPaths = [];
+        const privateNames = new Set();
+        const body = path.get("body");
+        for (const path of body.get("body")) {
+          if ((path.isClassProperty() || path.isClassMethod()) && path.node.computed) {
+            computedPaths.push(path);
+          }
+          if (path.isPrivate()) {
+            const {
+              name
+            } = path.node.key.id;
+            const getName = `get ${name}`;
+            const setName = `set ${name}`;
+            if (path.isClassPrivateMethod()) {
+              if (path.node.kind === "get") {
+                if (privateNames.has(getName) || privateNames.has(name) && !privateNames.has(setName)) {
+                  throw path.buildCodeFrameError("Duplicate private field");
+                }
+                privateNames.add(getName).add(name);
+              } else if (path.node.kind === "set") {
+                if (privateNames.has(setName) || privateNames.has(name) && !privateNames.has(getName)) {
+                  throw path.buildCodeFrameError("Duplicate private field");
+                }
+                privateNames.add(setName).add(name);
+              }
+            } else {
+              if (privateNames.has(name) && !privateNames.has(getName) && !privateNames.has(setName) || privateNames.has(name) && (privateNames.has(getName) || privateNames.has(setName))) {
+                throw path.buildCodeFrameError("Duplicate private field");
+              }
+              privateNames.add(name);
+            }
+          }
+          if (path.isClassMethod({
+            kind: "constructor"
+          })) {
+            constructor = path;
+          } else {
+            elements.push(path);
+            if (path.isProperty() || path.isPrivate() || path.isStaticBlock != null && path.isStaticBlock()) {
+              props.push(path);
+            }
+          }
+        }
+        {
+          if (!props.length && !isDecorated) return;
+        }
+        const innerBinding = path.node.id;
+        let ref;
+        if (!innerBinding || !pathIsClassDeclaration) {
+          {
+            var _path$ensureFunctionN;
+            (_path$ensureFunctionN = path.ensureFunctionName) != null ? _path$ensureFunctionN : path.ensureFunctionName = require("@babel/traverse").NodePath.prototype.ensureFunctionName;
+          }
+          path.ensureFunctionName(false);
+          ref = path.scope.generateUidIdentifier((innerBinding == null ? void 0 : innerBinding.name) || "Class");
+        }
+        const classRefForDefine = ref != null ? ref : _core.types.cloneNode(innerBinding);
+        const privateNamesMap = (0, _fields.buildPrivateNamesMap)(classRefForDefine.name, privateFieldsAsSymbolsOrProperties != null ? privateFieldsAsSymbolsOrProperties : loose, props, file);
+        const privateNamesNodes = (0, _fields.buildPrivateNamesNodes)(privateNamesMap, privateFieldsAsProperties != null ? privateFieldsAsProperties : loose, privateFieldsAsSymbols != null ? privateFieldsAsSymbols : false, file);
+        (0, _fields.transformPrivateNamesUsage)(classRefForDefine, path, privateNamesMap, {
+          privateFieldsAsProperties: privateFieldsAsSymbolsOrProperties != null ? privateFieldsAsSymbolsOrProperties : loose,
+          noUninitializedPrivateFieldAccess,
+          noDocumentAll,
+          innerBinding
+        }, file);
+        let keysNodes, staticNodes, instanceNodes, lastInstanceNodeReturnsThis, pureStaticNodes, classBindingNode, wrapClass;
+        {
+          if (isDecorated) {
+            staticNodes = pureStaticNodes = keysNodes = [];
+            ({
+              instanceNodes,
+              wrapClass
+            } = (0, _decorators2.buildDecoratedClass)(classRefForDefine, path, elements, file));
+          } else {
+            keysNodes = (0, _misc.extractComputedKeys)(path, computedPaths, file);
+            ({
+              staticNodes,
+              pureStaticNodes,
+              instanceNodes,
+              lastInstanceNodeReturnsThis,
+              classBindingNode,
+              wrapClass
+            } = (0, _fields.buildFieldsInitNodes)(ref, path.node.superClass, props, privateNamesMap, file, setPublicClassFields != null ? setPublicClassFields : loose, privateFieldsAsSymbolsOrProperties != null ? privateFieldsAsSymbolsOrProperties : loose, noUninitializedPrivateFieldAccess, constantSuper != null ? constantSuper : loose, innerBinding));
+          }
+        }
+        if (instanceNodes.length > 0) {
+          (0, _misc.injectInitialization)(path, constructor, instanceNodes, (referenceVisitor, state) => {
+            {
+              if (isDecorated) return;
+            }
+            for (const prop of props) {
+              if (_core.types.isStaticBlock != null && _core.types.isStaticBlock(prop.node) || prop.node.static) continue;
+              prop.traverse(referenceVisitor, state);
+            }
+          }, lastInstanceNodeReturnsThis);
+        }
+        const wrappedPath = wrapClass(path);
+        wrappedPath.insertBefore([...privateNamesNodes, ...keysNodes]);
+        if (staticNodes.length > 0) {
+          wrappedPath.insertAfter(staticNodes);
+        }
+        if (pureStaticNodes.length > 0) {
+          wrappedPath.find(parent => parent.isStatement() || parent.isDeclaration()).insertAfter(pureStaticNodes);
+        }
+        if (classBindingNode != null && pathIsClassDeclaration) {
+          wrappedPath.insertAfter(classBindingNode);
+        }
+      },
+      ExportDefaultDeclaration(path, {
+        file
+      }) {
+        {
+          if (file.get(versionKey) !== "7.27.1") return;
+          const decl = path.get("declaration");
+          if (decl.isClassDeclaration() && (0, _decorators.hasDecorators)(decl.node)) {
+            if (decl.node.id) {
+              {
+                var _path$splitExportDecl;
+                (_path$splitExportDecl = path.splitExportDeclaration) != null ? _path$splitExportDecl : path.splitExportDeclaration = require("@babel/traverse").NodePath.prototype.splitExportDeclaration;
+              }
+              path.splitExportDeclaration();
+            } else {
+              decl.node.type = "ClassExpression";
+            }
+          }
+        }
+      }
     }
   };
-  return codeFrameColumns(rawLines, location, opts);
 }
 
-exports.codeFrameColumns = codeFrameColumns;
-exports.default = index;
-exports.highlight = highlight;
 //# sourceMappingURL=index.js.map

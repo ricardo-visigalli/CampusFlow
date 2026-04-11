@@ -1,40 +1,38 @@
 {
-  "name": "@babel/generator",
-  "version": "7.28.0",
-  "description": "Turns an AST into code.",
-  "author": "The Babel Team (https://babel.dev/team)",
-  "license": "MIT",
-  "publishConfig": {
-    "access": "public"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/babel/babel.git",
-    "directory": "packages/babel-generator"
-  },
-  "homepage": "https://babel.dev/docs/en/next/babel-generator",
-  "bugs": "https://github.com/babel/babel/issues?utf8=%E2%9C%93&q=is%3Aissue+label%3A%22pkg%3A%20generator%22+is%3Aopen",
-  "main": "./lib/index.js",
-  "files": [
-    "lib"
-  ],
-  "dependencies": {
-    "@babel/parser": "^7.28.0",
-    "@babel/types": "^7.28.0",
-    "@jridgewell/gen-mapping": "^0.3.12",
-    "@jridgewell/trace-mapping": "^0.3.28",
-    "jsesc": "^3.0.2"
+  "name": "semver",
+  "version": "6.3.1",
+  "description": "The semantic version parser used by npm.",
+  "main": "semver.js",
+  "scripts": {
+    "test": "tap test/ --100 --timeout=30",
+    "lint": "echo linting disabled",
+    "postlint": "template-oss-check",
+    "template-oss-apply": "template-oss-apply --force",
+    "lintfix": "npm run lint -- --fix",
+    "snap": "tap test/ --100 --timeout=30",
+    "posttest": "npm run lint"
   },
   "devDependencies": {
-    "@babel/core": "^7.28.0",
-    "@babel/helper-fixtures": "^7.28.0",
-    "@babel/plugin-transform-typescript": "^7.28.0",
-    "@jridgewell/sourcemap-codec": "^1.5.3",
-    "@types/jsesc": "^2.5.0",
-    "charcodes": "^0.2.0"
+    "@npmcli/template-oss": "4.17.0",
+    "tap": "^12.7.0"
   },
-  "engines": {
-    "node": ">=6.9.0"
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/npm/node-semver.git"
   },
-  "type": "commonjs"
+  "bin": {
+    "semver": "./bin/semver.js"
+  },
+  "files": [
+    "bin",
+    "range.bnf",
+    "semver.js"
+  ],
+  "author": "GitHub Inc.",
+  "templateOSS": {
+    "//@npmcli/template-oss": "This file is partially managed by @npmcli/template-oss. Edits may be overwritten.",
+    "content": "./scripts/template-oss",
+    "version": "4.17.0"
+  }
 }
