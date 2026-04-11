@@ -1,157 +1,124 @@
 "use strict";
 
-var _utils = require("./utils.js");
-const defineType = (0, _utils.defineAliasedType)("JSX");
-defineType("JSXAttribute", {
-  visitor: ["name", "value"],
-  aliases: ["Immutable"],
-  fields: {
-    name: {
-      validate: (0, _utils.assertNodeType)("JSXIdentifier", "JSXNamespacedName")
-    },
-    value: {
-      optional: true,
-      validate: (0, _utils.assertNodeType)("JSXElement", "JSXFragment", "StringLiteral", "JSXExpressionContainer")
-    }
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.JSXAttribute = JSXAttribute;
+exports.JSXClosingElement = JSXClosingElement;
+exports.JSXClosingFragment = JSXClosingFragment;
+exports.JSXElement = JSXElement;
+exports.JSXEmptyExpression = JSXEmptyExpression;
+exports.JSXExpressionContainer = JSXExpressionContainer;
+exports.JSXFragment = JSXFragment;
+exports.JSXIdentifier = JSXIdentifier;
+exports.JSXMemberExpression = JSXMemberExpression;
+exports.JSXNamespacedName = JSXNamespacedName;
+exports.JSXOpeningElement = JSXOpeningElement;
+exports.JSXOpeningFragment = JSXOpeningFragment;
+exports.JSXSpreadAttribute = JSXSpreadAttribute;
+exports.JSXSpreadChild = JSXSpreadChild;
+exports.JSXText = JSXText;
+function JSXAttribute(node) {
+  this.print(node.name);
+  if (node.value) {
+    this.tokenChar(61);
+    this.print(node.value);
   }
-});
-defineType("JSXClosingElement", {
-  visitor: ["name"],
-  aliases: ["Immutable"],
-  fields: {
-    name: {
-      validate: (0, _utils.assertNodeType)("JSXIdentifier", "JSXMemberExpression", "JSXNamespacedName")
-    }
+}
+function JSXIdentifier(node) {
+  this.word(node.name);
+}
+function JSXNamespacedName(node) {
+  this.print(node.namespace);
+  this.tokenChar(58);
+  this.print(node.name);
+}
+function JSXMemberExpression(node) {
+  this.print(node.object);
+  this.tokenChar(46);
+  this.print(node.property);
+}
+function JSXSpreadAttribute(node) {
+  this.tokenChar(123);
+  this.token("...");
+  this.print(node.argument);
+  this.rightBrace(node);
+}
+function JSXExpressionContainer(node) {
+  this.tokenChar(123);
+  this.print(node.expression);
+  this.rightBrace(node);
+}
+function JSXSpreadChild(node) {
+  this.tokenChar(123);
+  this.token("...");
+  this.print(node.expression);
+  this.rightBrace(node);
+}
+function JSXText(node) {
+  const raw = this.getPossibleRaw(node);
+  if (raw !== undefined) {
+    this.token(raw, true);
+  } else {
+    this.token(node.value, true);
   }
-});
-defineType("JSXElement", {
-  builder: ["openingElement", "closingElement", "children", "selfClosing"],
-  visitor: ["openingElement", "children", "closingElement"],
-  aliases: ["Immutable", "Expression"],
-  fields: Object.assign({
-    openingElement: {
-      validate: (0, _utils.assertNodeType)("JSXOpeningElement")
-    },
-    closingElement: {
-      optional: true,
-      validate: (0, _utils.assertNodeType)("JSXClosingElement")
-    },
-    children: (0, _utils.validateArrayOfType)("JSXText", "JSXExpressionContainer", "JSXSpreadChild", "JSXElement", "JSXFragment")
-  }, {
-    selfClosing: {
-      validate: (0, _utils.assertValueType)("boolean"),
-      optional: true
-    }
-  })
-});
-defineType("JSXEmptyExpression", {});
-defineType("JSXExpressionContainer", {
-  visitor: ["expression"],
-  aliases: ["Immutable"],
-  fields: {
-    expression: {
-      validate: (0, _utils.assertNodeType)("Expression", "JSXEmptyExpression")
-    }
+}
+function JSXElement(node) {
+  const open = node.openingElement;
+  this.print(open);
+  if (open.selfClosing) return;
+  this.indent();
+  for (const child of node.children) {
+    this.print(child);
   }
-});
-defineType("JSXSpreadChild", {
-  visitor: ["expression"],
-  aliases: ["Immutable"],
-  fields: {
-    expression: {
-      validate: (0, _utils.assertNodeType)("Expression")
-    }
+  this.dedent();
+  this.print(node.closingElement);
+}
+function spaceSeparator() {
+  this.space();
+}
+function JSXOpeningElement(node) {
+  this.tokenChar(60);
+  this.print(node.name);
+  if (node.typeArguments) {
+    this.print(node.typeArguments);
   }
-});
-defineType("JSXIdentifier", {
-  builder: ["name"],
-  fields: {
-    name: {
-      validate: (0, _utils.assertValueType)("string")
-    }
+  this.print(node.typeParameters);
+  if (node.attributes.length > 0) {
+    this.space();
+    this.printJoin(node.attributes, undefined, undefined, spaceSeparator);
   }
-});
-defineType("JSXMemberExpression", {
-  visitor: ["object", "property"],
-  fields: {
-    object: {
-      validate: (0, _utils.assertNodeType)("JSXMemberExpression", "JSXIdentifier")
-    },
-    property: {
-      validate: (0, _utils.assertNodeType)("JSXIdentifier")
-    }
+  if (node.selfClosing) {
+    this.space();
+    this.tokenChar(47);
   }
-});
-defineType("JSXNamespacedName", {
-  visitor: ["namespace", "name"],
-  fields: {
-    namespace: {
-      validate: (0, _utils.assertNodeType)("JSXIdentifier")
-    },
-    name: {
-      validate: (0, _utils.assertNodeType)("JSXIdentifier")
-    }
+  this.tokenChar(62);
+}
+function JSXClosingElement(node) {
+  this.tokenChar(60);
+  this.tokenChar(47);
+  this.print(node.name);
+  this.tokenChar(62);
+}
+function JSXEmptyExpression() {
+  this.printInnerComments();
+}
+function JSXFragment(node) {
+  this.print(node.openingFragment);
+  this.indent();
+  for (const child of node.children) {
+    this.print(child);
   }
-});
-defineType("JSXOpeningElement", {
-  builder: ["name", "attributes", "selfClosing"],
-  visitor: ["name", "typeParameters", "typeArguments", "attributes"],
-  aliases: ["Immutable"],
-  fields: Object.assign({
-    name: {
-      validate: (0, _utils.assertNodeType)("JSXIdentifier", "JSXMemberExpression", "JSXNamespacedName")
-    },
-    selfClosing: {
-      default: false
-    },
-    attributes: (0, _utils.validateArrayOfType)("JSXAttribute", "JSXSpreadAttribute"),
-    typeArguments: {
-      validate: (0, _utils.assertNodeType)("TypeParameterInstantiation"),
-      optional: true
-    }
-  }, {
-    typeParameters: {
-      validate: (0, _utils.assertNodeType)("TSTypeParameterInstantiation"),
-      optional: true
-    }
-  })
-});
-defineType("JSXSpreadAttribute", {
-  visitor: ["argument"],
-  fields: {
-    argument: {
-      validate: (0, _utils.assertNodeType)("Expression")
-    }
-  }
-});
-defineType("JSXText", {
-  aliases: ["Immutable"],
-  builder: ["value"],
-  fields: {
-    value: {
-      validate: (0, _utils.assertValueType)("string")
-    }
-  }
-});
-defineType("JSXFragment", {
-  builder: ["openingFragment", "closingFragment", "children"],
-  visitor: ["openingFragment", "children", "closingFragment"],
-  aliases: ["Immutable", "Expression"],
-  fields: {
-    openingFragment: {
-      validate: (0, _utils.assertNodeType)("JSXOpeningFragment")
-    },
-    closingFragment: {
-      validate: (0, _utils.assertNodeType)("JSXClosingFragment")
-    },
-    children: (0, _utils.validateArrayOfType)("JSXText", "JSXExpressionContainer", "JSXSpreadChild", "JSXElement", "JSXFragment")
-  }
-});
-defineType("JSXOpeningFragment", {
-  aliases: ["Immutable"]
-});
-defineType("JSXClosingFragment", {
-  aliases: ["Immutable"]
-});
+  this.dedent();
+  this.print(node.closingFragment);
+}
+function JSXOpeningFragment() {
+  this.tokenChar(60);
+  this.tokenChar(62);
+}
+function JSXClosingFragment() {
+  this.token("</");
+  this.tokenChar(62);
+}
 
 //# sourceMappingURL=jsx.js.map

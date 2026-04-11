@@ -1,400 +1,153 @@
-'use strict';
+"use strict";
 
-Object.defineProperty(exports, '__esModule', { value: true });
-
-var _t = require('@babel/types');
-
-function _interopNamespace(e) {
-  if (e && e.__esModule) return e;
-  var n = Object.create(null);
-  if (e) {
-    Object.keys(e).forEach(function (k) {
-      if (k !== 'default') {
-        var d = Object.getOwnPropertyDescriptor(e, k);
-        Object.defineProperty(n, k, d.get ? d : {
-          enumerable: true,
-          get: function () { return e[k]; }
-        });
-      }
-    });
-  }
-  n.default = e;
-  return Object.freeze(n);
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+var _helperPluginUtils = require("@babel/helper-plugin-utils");
+var _helperCreateClassFeaturesPlugin = require("@babel/helper-create-class-features-plugin");
+function generateUid(scope, denyList) {
+  const name = "";
+  let uid;
+  let i = 1;
+  do {
+    uid = `_${name}`;
+    if (i > 1) uid += i;
+    i++;
+  } while (denyList.has(uid));
+  return uid;
 }
-
-var _t__namespace = /*#__PURE__*/_interopNamespace(_t);
-
-function willPathCastToBoolean(path) {
-  const maybeWrapped = path;
-  const {
-    node,
-    parentPath
-  } = maybeWrapped;
-  if (parentPath.isLogicalExpression()) {
-    const {
-      operator,
-      right
-    } = parentPath.node;
-    if (operator === "&&" || operator === "||" || operator === "??" && node === right) {
-      return willPathCastToBoolean(parentPath);
+function mapLast(arr, fn) {
+  if (arr.length === 0) return arr;
+  return [...arr.slice(0, -1), fn(arr[arr.length - 1])];
+}
+var _default = exports.default = (0, _helperPluginUtils.declare)(({
+  types: t,
+  template,
+  traverse,
+  assertVersion
+}) => {
+  assertVersion("^7.12.0 || ^8.0.0-0 || >8.0.0-alpha <8.0.0-beta");
+  const rawNamedEvaluationVisitor = (0, _helperCreateClassFeaturesPlugin.buildNamedEvaluationVisitor)(path => {
+    if (!path.isClassExpression()) return false;
+    for (let i = path.node.body.body.length - 1; i >= 0; i--) {
+      const el = path.node.body.body[i];
+      if (t.isStaticBlock(el)) {
+        return true;
+      }
+      if ((t.isClassProperty(el) || t.isClassPrivateProperty(el)) && el.static) {
+        break;
+      }
     }
-  }
-  if (parentPath.isSequenceExpression()) {
-    const {
-      expressions
-    } = parentPath.node;
-    if (expressions[expressions.length - 1] === node) {
-      return willPathCastToBoolean(parentPath);
-    } else {
-      return true;
-    }
-  }
-  return parentPath.isConditional({
-    test: node
-  }) || parentPath.isUnaryExpression({
-    operator: "!"
-  }) || parentPath.isForStatement({
-    test: node
-  }) || parentPath.isWhile({
-    test: node
+    return false;
+  }, (classPath, state, name) => {
+    const nameNode = typeof name === "string" ? t.stringLiteral(name) : name;
+    classPath.get("body").unshiftContainer("body", t.staticBlock([template.statement.ast`
+            ${state.addHelper("setFunctionName")}(this, ${nameNode});
+          `]));
   });
-}
-
-const {
-  LOGICAL_OPERATORS,
-  arrowFunctionExpression,
-  assignmentExpression,
-  binaryExpression,
-  booleanLiteral,
-  callExpression,
-  cloneNode,
-  conditionalExpression,
-  identifier,
-  isMemberExpression,
-  isOptionalCallExpression,
-  isOptionalMemberExpression,
-  isUpdateExpression,
-  logicalExpression,
-  memberExpression,
-  nullLiteral,
-  optionalCallExpression,
-  optionalMemberExpression,
-  sequenceExpression,
-  updateExpression
-} = _t__namespace;
-class AssignmentMemoiser {
-  constructor() {
-    this._map = void 0;
-    this._map = new WeakMap();
+  if (!t.classAccessorProperty) {
+    delete rawNamedEvaluationVisitor.ClassAccessorProperty;
   }
-  has(key) {
-    return this._map.has(key);
-  }
-  get(key) {
-    if (!this.has(key)) return;
-    const record = this._map.get(key);
-    const {
-      value
-    } = record;
-    record.count--;
-    if (record.count === 0) {
-      return assignmentExpression("=", value, key);
-    }
-    return value;
-  }
-  set(key, value, count) {
-    return this._map.set(key, {
-      count,
-      value
-    });
-  }
-}
-function toNonOptional(path, base) {
-  const {
-    node
-  } = path;
-  if (isOptionalMemberExpression(node)) {
-    return memberExpression(base, node.property, node.computed);
-  }
-  if (path.isOptionalCallExpression()) {
-    const callee = path.get("callee");
-    if (path.node.optional && callee.isOptionalMemberExpression()) {
-      const object = callee.node.object;
-      const context = path.scope.maybeGenerateMemoised(object);
-      callee.get("object").replaceWith(assignmentExpression("=", context, object));
-      return callExpression(memberExpression(base, identifier("call")), [context, ...path.node.arguments]);
-    }
-    return callExpression(base, path.node.arguments);
-  }
-  return path.node;
-}
-function isInDetachedTree(path) {
-  while (path) {
-    if (path.isProgram()) break;
-    const {
-      parentPath,
-      container,
-      listKey
-    } = path;
-    const parentNode = parentPath.node;
-    if (listKey) {
-      if (container !== parentNode[listKey]) {
-        return true;
-      }
+  const namedEvaluationVisitor = traverse.visitors.explode(rawNamedEvaluationVisitor);
+  const maybeSequenceExpression = expressions => {
+    if (expressions.length === 1) {
+      return expressions[0];
     } else {
-      if (container !== parentNode) return true;
+      return t.sequenceExpression(expressions);
     }
-    path = parentPath;
-  }
-  return false;
-}
-const handle = {
-  memoise() {},
-  handle(member, noDocumentAll) {
+  };
+  const blocksToExpressions = blocks => blocks.map(block => {
     const {
-      node,
-      parent,
-      parentPath,
-      scope
-    } = member;
-    if (member.isOptionalMemberExpression()) {
-      if (isInDetachedTree(member)) return;
-      const endPath = member.find(({
-        node,
-        parent
-      }) => {
-        if (isOptionalMemberExpression(parent)) {
-          return parent.optional || parent.object !== node;
-        }
-        if (isOptionalCallExpression(parent)) {
-          return (node !== member.node && parent.optional || parent.callee !== node
-          );
-        }
-        return true;
-      });
-      if (scope.path.isPattern()) {
-        endPath.replaceWith(callExpression(arrowFunctionExpression([], endPath.node), []));
-        return;
-      }
-      const willEndPathCastToBoolean = willPathCastToBoolean(endPath);
-      const rootParentPath = endPath.parentPath;
-      if (rootParentPath.isUpdateExpression({
-        argument: node
-      })) {
-        throw member.buildCodeFrameError(`can't handle update expression`);
-      }
-      const isAssignment = rootParentPath.isAssignmentExpression({
-        left: endPath.node
-      });
-      const isDeleteOperation = rootParentPath.isUnaryExpression({
-        operator: "delete"
-      });
-      if (isDeleteOperation && endPath.isOptionalMemberExpression() && endPath.get("property").isPrivateName()) {
-        throw member.buildCodeFrameError(`can't delete a private class element`);
-      }
-      let startingOptional = member;
-      for (;;) {
-        if (startingOptional.isOptionalMemberExpression()) {
-          if (startingOptional.node.optional) break;
-          startingOptional = startingOptional.get("object");
-          continue;
-        } else if (startingOptional.isOptionalCallExpression()) {
-          if (startingOptional.node.optional) break;
-          startingOptional = startingOptional.get("callee");
-          continue;
-        }
-        throw new Error(`Internal error: unexpected ${startingOptional.node.type}`);
-      }
-      const startingNode = startingOptional.isOptionalMemberExpression() ? startingOptional.node.object : startingOptional.node.callee;
-      const baseNeedsMemoised = scope.maybeGenerateMemoised(startingNode);
-      const baseRef = baseNeedsMemoised != null ? baseNeedsMemoised : startingNode;
-      const parentIsOptionalCall = parentPath.isOptionalCallExpression({
-        callee: node
-      });
-      const isOptionalCall = parent => parentIsOptionalCall;
-      const parentIsCall = parentPath.isCallExpression({
-        callee: node
-      });
-      startingOptional.replaceWith(toNonOptional(startingOptional, baseRef));
-      if (isOptionalCall()) {
-        if (parent.optional) {
-          parentPath.replaceWith(this.optionalCall(member, parent.arguments));
-        } else {
-          parentPath.replaceWith(this.call(member, parent.arguments));
-        }
-      } else if (parentIsCall) {
-        member.replaceWith(this.boundGet(member));
-      } else if (this.delete && parentPath.isUnaryExpression({
-        operator: "delete"
-      })) {
-        parentPath.replaceWith(this.delete(member));
-      } else if (parentPath.isAssignmentExpression()) {
-        handleAssignment(this, member, parentPath);
-      } else {
-        member.replaceWith(this.get(member));
-      }
-      let regular = member.node;
-      for (let current = member; current !== endPath;) {
-        const parentPath = current.parentPath;
-        if (parentPath === endPath && isOptionalCall() && parent.optional) {
-          regular = parentPath.node;
-          break;
-        }
-        regular = toNonOptional(parentPath, regular);
-        current = parentPath;
-      }
-      let context;
-      const endParentPath = endPath.parentPath;
-      if (isMemberExpression(regular) && endParentPath.isOptionalCallExpression({
-        callee: endPath.node,
-        optional: true
-      })) {
+      body
+    } = block;
+    if (body.length === 1 && t.isExpressionStatement(body[0])) {
+      return t.inheritsComments(t.inheritsComments(body[0].expression, body[0]), block);
+    }
+    return t.inheritsComments(template.expression.ast`(() => { ${body} })()`, block);
+  });
+  const prependToInitializer = (prop, expressions) => {
+    prop.value = prop.value ? t.sequenceExpression([...expressions, prop.value]) : maybeSequenceExpression(mapLast(expressions, expr => t.unaryExpression("void", expr)));
+  };
+  return {
+    name: "transform-class-static-block",
+    manipulateOptions: (_, parser) => parser.plugins.push("classStaticBlock"),
+    pre() {
+      (0, _helperCreateClassFeaturesPlugin.enableFeature)(this.file, _helperCreateClassFeaturesPlugin.FEATURES.staticBlocks, false);
+    },
+    visitor: {
+      ClassBody(classBody) {
         const {
-          object
-        } = regular;
-        context = member.scope.maybeGenerateMemoised(object);
-        if (context) {
-          regular.object = assignmentExpression("=", context, object);
+          scope
+        } = classBody;
+        let parentPath = classBody.parentPath;
+        if (parentPath.isClassExpression() && !parentPath.node.id) {
+          do ({
+            parentPath
+          } = parentPath); while (parentPath && !namedEvaluationVisitor[parentPath.type] && !parentPath.isStatement());
+          if (parentPath) {
+            var _namedEvaluationVisit;
+            (_namedEvaluationVisit = namedEvaluationVisitor[parentPath.type]) == null || _namedEvaluationVisit.enter.forEach(f => f.call(this, parentPath, this));
+          }
+        }
+        const pendingStaticBlocks = [];
+        let lastStaticProp = null;
+        for (const path of classBody.get("body")) {
+          if (path.isStaticBlock()) {
+            pendingStaticBlocks.push(path.node);
+            path.remove();
+          } else if (path.isClassProperty({
+            static: true
+          }) || path.isClassPrivateProperty({
+            static: true
+          })) {
+            lastStaticProp = path;
+            if (pendingStaticBlocks.length > 0) {
+              prependToInitializer(path.node, blocksToExpressions(pendingStaticBlocks));
+              pendingStaticBlocks.length = 0;
+            }
+          }
+        }
+        if (pendingStaticBlocks.length > 0) {
+          const tmp = scope.generateDeclaredUidIdentifier("staticBlock");
+          let arrowBody;
+          const needsCompletionValue = classBody.parentPath.isExpression();
+          if (pendingStaticBlocks.length > 1 || pendingStaticBlocks[0].body.length === 1 && t.isExpressionStatement(pendingStaticBlocks[0].body[0])) {
+            const expressions = blocksToExpressions(pendingStaticBlocks);
+            if (needsCompletionValue) {
+              expressions.push(t.thisExpression());
+            }
+            arrowBody = maybeSequenceExpression(expressions);
+          } else {
+            arrowBody = t.blockStatement(pendingStaticBlocks[0].body);
+            if (needsCompletionValue) {
+              arrowBody.body.push(t.returnStatement(t.thisExpression()));
+            }
+          }
+          const init = template.expression.ast`${tmp} = () => ${arrowBody}`;
+          if (lastStaticProp) {
+            prependToInitializer(lastStaticProp.node, [init]);
+          } else {
+            const privateNames = new Set();
+            for (const path of classBody.get("body")) {
+              if (path.isPrivate()) {
+                privateNames.add(path.get("key.id").node.name);
+              }
+            }
+            const staticBlockPrivateId = generateUid(scope, privateNames);
+            const staticBlockRef = t.privateName(t.identifier(staticBlockPrivateId));
+            classBody.pushContainer("body", [t.classPrivateProperty(staticBlockRef, init, [], true)]);
+          }
+          const staticBlockClosureCall = t.callExpression(t.cloneNode(tmp), []);
+          if (classBody.parentPath.isClassExpression()) {
+            classBody.parentPath.replaceWith(t.sequenceExpression([classBody.parent, staticBlockClosureCall]));
+          } else {
+            classBody.parentPath.insertAfter(t.expressionStatement(staticBlockClosureCall));
+          }
         }
       }
-      let replacementPath = endPath;
-      if (isDeleteOperation || isAssignment) {
-        replacementPath = endParentPath;
-        regular = endParentPath.node;
-      }
-      const baseMemoised = baseNeedsMemoised ? assignmentExpression("=", cloneNode(baseRef), cloneNode(startingNode)) : cloneNode(baseRef);
-      if (willEndPathCastToBoolean) {
-        let nonNullishCheck;
-        if (noDocumentAll) {
-          nonNullishCheck = binaryExpression("!=", baseMemoised, nullLiteral());
-        } else {
-          nonNullishCheck = logicalExpression("&&", binaryExpression("!==", baseMemoised, nullLiteral()), binaryExpression("!==", cloneNode(baseRef), scope.buildUndefinedNode()));
-        }
-        replacementPath.replaceWith(logicalExpression("&&", nonNullishCheck, regular));
-      } else {
-        let nullishCheck;
-        if (noDocumentAll) {
-          nullishCheck = binaryExpression("==", baseMemoised, nullLiteral());
-        } else {
-          nullishCheck = logicalExpression("||", binaryExpression("===", baseMemoised, nullLiteral()), binaryExpression("===", cloneNode(baseRef), scope.buildUndefinedNode()));
-        }
-        replacementPath.replaceWith(conditionalExpression(nullishCheck, isDeleteOperation ? booleanLiteral(true) : scope.buildUndefinedNode(), regular));
-      }
-      if (context) {
-        const endParent = endParentPath.node;
-        endParentPath.replaceWith(optionalCallExpression(optionalMemberExpression(endParent.callee, identifier("call"), false, true), [cloneNode(context), ...endParent.arguments], false));
-      }
-      return;
     }
-    if (isUpdateExpression(parent, {
-      argument: node
-    })) {
-      if (this.simpleSet) {
-        member.replaceWith(this.simpleSet(member));
-        return;
-      }
-      const {
-        operator,
-        prefix
-      } = parent;
-      this.memoise(member, 2);
-      const ref = scope.generateUidIdentifierBasedOnNode(node);
-      scope.push({
-        id: ref
-      });
-      const seq = [assignmentExpression("=", cloneNode(ref), this.get(member))];
-      if (prefix) {
-        seq.push(updateExpression(operator, cloneNode(ref), prefix));
-        const value = sequenceExpression(seq);
-        parentPath.replaceWith(this.set(member, value));
-        return;
-      } else {
-        const ref2 = scope.generateUidIdentifierBasedOnNode(node);
-        scope.push({
-          id: ref2
-        });
-        seq.push(assignmentExpression("=", cloneNode(ref2), updateExpression(operator, cloneNode(ref), prefix)), cloneNode(ref));
-        const value = sequenceExpression(seq);
-        parentPath.replaceWith(sequenceExpression([this.set(member, value), cloneNode(ref2)]));
-        return;
-      }
-    }
-    if (parentPath.isAssignmentExpression({
-      left: node
-    })) {
-      handleAssignment(this, member, parentPath);
-      return;
-    }
-    if (parentPath.isCallExpression({
-      callee: node
-    })) {
-      parentPath.replaceWith(this.call(member, parentPath.node.arguments));
-      return;
-    }
-    if (parentPath.isOptionalCallExpression({
-      callee: node
-    })) {
-      if (scope.path.isPattern()) {
-        parentPath.replaceWith(callExpression(arrowFunctionExpression([], parentPath.node), []));
-        return;
-      }
-      parentPath.replaceWith(this.optionalCall(member, parentPath.node.arguments));
-      return;
-    }
-    if (this.delete && parentPath.isUnaryExpression({
-      operator: "delete"
-    })) {
-      parentPath.replaceWith(this.delete(member));
-      return;
-    }
-    if (parentPath.isForXStatement({
-      left: node
-    }) || parentPath.isObjectProperty({
-      value: node
-    }) && parentPath.parentPath.isObjectPattern() || parentPath.isAssignmentPattern({
-      left: node
-    }) && parentPath.parentPath.isObjectProperty({
-      value: parent
-    }) && parentPath.parentPath.parentPath.isObjectPattern() || parentPath.isArrayPattern() || parentPath.isAssignmentPattern({
-      left: node
-    }) && parentPath.parentPath.isArrayPattern() || parentPath.isRestElement()) {
-      member.replaceWith(this.destructureSet(member));
-      return;
-    }
-    if (parentPath.isTaggedTemplateExpression()) {
-      member.replaceWith(this.boundGet(member));
-    } else {
-      member.replaceWith(this.get(member));
-    }
-  }
-};
-function handleAssignment(state, member, parentPath) {
-  if (state.simpleSet) {
-    member.replaceWith(state.simpleSet(member));
-    return;
-  }
-  const {
-    operator,
-    right: value
-  } = parentPath.node;
-  if (operator === "=") {
-    parentPath.replaceWith(state.set(member, value));
-  } else {
-    const operatorTrunc = operator.slice(0, -1);
-    if (LOGICAL_OPERATORS.includes(operatorTrunc)) {
-      state.memoise(member, 1);
-      parentPath.replaceWith(logicalExpression(operatorTrunc, state.get(member), state.set(member, value)));
-    } else {
-      state.memoise(member, 2);
-      parentPath.replaceWith(state.set(member, binaryExpression(operatorTrunc, state.get(member), value)));
-    }
-  }
-}
-function memberExpressionToFunctions(path, visitor, state) {
-  path.traverse(visitor, Object.assign({}, handle, state, {
-    memoiser: new AssignmentMemoiser()
-  }));
-}
+  };
+});
 
-exports.default = memberExpressionToFunctions;
 //# sourceMappingURL=index.js.map
