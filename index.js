@@ -3,247 +3,124 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-Object.defineProperty(exports, "FEATURES", {
-  enumerable: true,
-  get: function () {
-    return _features.FEATURES;
+exports.default = void 0;
+exports.get = get;
+exports.getDependencies = getDependencies;
+exports.isInternal = isInternal;
+exports.list = void 0;
+exports.minVersion = minVersion;
+var _t = require("@babel/types");
+var _helpersGenerated = require("./helpers-generated.js");
+const {
+  cloneNode,
+  identifier
+} = _t;
+function deep(obj, path, value) {
+  try {
+    const parts = path.split(".");
+    let last = parts.shift();
+    while (parts.length > 0) {
+      obj = obj[last];
+      last = parts.shift();
+    }
+    if (arguments.length > 2) {
+      obj[last] = value;
+    } else {
+      return obj[last];
+    }
+  } catch (e) {
+    e.message += ` (when accessing ${path})`;
+    throw e;
   }
-});
-Object.defineProperty(exports, "buildCheckInRHS", {
-  enumerable: true,
-  get: function () {
-    return _fields.buildCheckInRHS;
-  }
-});
-exports.createClassFeaturePlugin = createClassFeaturePlugin;
-Object.defineProperty(exports, "enableFeature", {
-  enumerable: true,
-  get: function () {
-    return _features.enableFeature;
-  }
-});
-Object.defineProperty(exports, "injectInitialization", {
-  enumerable: true,
-  get: function () {
-    return _misc.injectInitialization;
-  }
-});
-var _core = require("@babel/core");
-var _semver = require("semver");
-var _fields = require("./fields.js");
-var _decorators = require("./decorators.js");
-var _decorators2 = require("./decorators-2018-09.js");
-var _misc = require("./misc.js");
-var _features = require("./features.js");
-var _typescript = require("./typescript.js");
-const versionKey = "@babel/plugin-class-features/version";
-function createClassFeaturePlugin({
-  name,
-  feature,
-  loose,
-  manipulateOptions,
-  api,
-  inherits,
-  decoratorVersion
-}) {
-  var _api$assumption;
-  if (feature & _features.FEATURES.decorators) {
-    {
-      if (decoratorVersion === "2023-11" || decoratorVersion === "2023-05" || decoratorVersion === "2023-01" || decoratorVersion === "2022-03" || decoratorVersion === "2021-12") {
-        return (0, _decorators.default)(api, {
-          loose
-        }, decoratorVersion, inherits);
+}
+function permuteHelperAST(ast, metadata, bindingName, localBindings, getDependency, adjustAst) {
+  const {
+    locals,
+    dependencies,
+    exportBindingAssignments,
+    exportName
+  } = metadata;
+  const bindings = new Set(localBindings || []);
+  if (bindingName) bindings.add(bindingName);
+  for (const [name, paths] of (Object.entries || (o => Object.keys(o).map(k => [k, o[k]])))(locals)) {
+    let newName = name;
+    if (bindingName && name === exportName) {
+      newName = bindingName;
+    } else {
+      while (bindings.has(newName)) newName = "_" + newName;
+    }
+    if (newName !== name) {
+      for (const path of paths) {
+        deep(ast, path, identifier(newName));
       }
     }
   }
-  {
-    api != null ? api : api = {
-      assumption: () => void 0
+  for (const [name, paths] of (Object.entries || (o => Object.keys(o).map(k => [k, o[k]])))(dependencies)) {
+    const ref = typeof getDependency === "function" && getDependency(name) || identifier(name);
+    for (const path of paths) {
+      deep(ast, path, cloneNode(ref));
+    }
+  }
+  adjustAst == null || adjustAst(ast, exportName, map => {
+    exportBindingAssignments.forEach(p => deep(ast, p, map(deep(ast, p))));
+  });
+}
+const helperData = Object.create(null);
+function loadHelper(name) {
+  if (!helperData[name]) {
+    const helper = _helpersGenerated.default[name];
+    if (!helper) {
+      throw Object.assign(new ReferenceError(`Unknown helper ${name}`), {
+        code: "BABEL_HELPER_UNKNOWN",
+        helper: name
+      });
+    }
+    helperData[name] = {
+      minVersion: helper.minVersion,
+      build(getDependency, bindingName, localBindings, adjustAst) {
+        const ast = helper.ast();
+        permuteHelperAST(ast, helper.metadata, bindingName, localBindings, getDependency, adjustAst);
+        return {
+          nodes: ast.body,
+          globals: helper.metadata.globals
+        };
+      },
+      getDependencies() {
+        return Object.keys(helper.metadata.dependencies);
+      }
     };
   }
-  const setPublicClassFields = api.assumption("setPublicClassFields");
-  const privateFieldsAsSymbols = api.assumption("privateFieldsAsSymbols");
-  const privateFieldsAsProperties = api.assumption("privateFieldsAsProperties");
-  const noUninitializedPrivateFieldAccess = (_api$assumption = api.assumption("noUninitializedPrivateFieldAccess")) != null ? _api$assumption : false;
-  const constantSuper = api.assumption("constantSuper");
-  const noDocumentAll = api.assumption("noDocumentAll");
-  if (privateFieldsAsProperties && privateFieldsAsSymbols) {
-    throw new Error(`Cannot enable both the "privateFieldsAsProperties" and ` + `"privateFieldsAsSymbols" assumptions as the same time.`);
-  }
-  const privateFieldsAsSymbolsOrProperties = privateFieldsAsProperties || privateFieldsAsSymbols;
-  if (loose === true) {
-    const explicit = [];
-    if (setPublicClassFields !== undefined) {
-      explicit.push(`"setPublicClassFields"`);
-    }
-    if (privateFieldsAsProperties !== undefined) {
-      explicit.push(`"privateFieldsAsProperties"`);
-    }
-    if (privateFieldsAsSymbols !== undefined) {
-      explicit.push(`"privateFieldsAsSymbols"`);
-    }
-    if (explicit.length !== 0) {
-      console.warn(`[${name}]: You are using the "loose: true" option and you are` + ` explicitly setting a value for the ${explicit.join(" and ")}` + ` assumption${explicit.length > 1 ? "s" : ""}. The "loose" option` + ` can cause incompatibilities with the other class features` + ` plugins, so it's recommended that you replace it with the` + ` following top-level option:\n` + `\t"assumptions": {\n` + `\t\t"setPublicClassFields": true,\n` + `\t\t"privateFieldsAsSymbols": true\n` + `\t}`);
+  return helperData[name];
+}
+function get(name, getDependency, bindingName, localBindings, adjustAst) {
+  {
+    if (typeof bindingName === "object") {
+      const id = bindingName;
+      if ((id == null ? void 0 : id.type) === "Identifier") {
+        bindingName = id.name;
+      } else {
+        bindingName = undefined;
+      }
     }
   }
-  return {
-    name,
-    manipulateOptions,
-    inherits,
-    pre(file) {
-      (0, _features.enableFeature)(file, feature, loose);
-      {
-        if (typeof file.get(versionKey) === "number") {
-          file.set(versionKey, "7.27.1");
-          return;
-        }
-      }
-      if (!file.get(versionKey) || _semver.lt(file.get(versionKey), "7.27.1")) {
-        file.set(versionKey, "7.27.1");
-      }
-    },
-    visitor: {
-      Class(path, {
-        file
-      }) {
-        if (file.get(versionKey) !== "7.27.1") return;
-        if (!(0, _features.shouldTransform)(path, file)) return;
-        const pathIsClassDeclaration = path.isClassDeclaration();
-        if (pathIsClassDeclaration) (0, _typescript.assertFieldTransformed)(path);
-        const loose = (0, _features.isLoose)(file, feature);
-        let constructor;
-        const isDecorated = (0, _decorators.hasDecorators)(path.node);
-        const props = [];
-        const elements = [];
-        const computedPaths = [];
-        const privateNames = new Set();
-        const body = path.get("body");
-        for (const path of body.get("body")) {
-          if ((path.isClassProperty() || path.isClassMethod()) && path.node.computed) {
-            computedPaths.push(path);
-          }
-          if (path.isPrivate()) {
-            const {
-              name
-            } = path.node.key.id;
-            const getName = `get ${name}`;
-            const setName = `set ${name}`;
-            if (path.isClassPrivateMethod()) {
-              if (path.node.kind === "get") {
-                if (privateNames.has(getName) || privateNames.has(name) && !privateNames.has(setName)) {
-                  throw path.buildCodeFrameError("Duplicate private field");
-                }
-                privateNames.add(getName).add(name);
-              } else if (path.node.kind === "set") {
-                if (privateNames.has(setName) || privateNames.has(name) && !privateNames.has(getName)) {
-                  throw path.buildCodeFrameError("Duplicate private field");
-                }
-                privateNames.add(setName).add(name);
-              }
-            } else {
-              if (privateNames.has(name) && !privateNames.has(getName) && !privateNames.has(setName) || privateNames.has(name) && (privateNames.has(getName) || privateNames.has(setName))) {
-                throw path.buildCodeFrameError("Duplicate private field");
-              }
-              privateNames.add(name);
-            }
-          }
-          if (path.isClassMethod({
-            kind: "constructor"
-          })) {
-            constructor = path;
-          } else {
-            elements.push(path);
-            if (path.isProperty() || path.isPrivate() || path.isStaticBlock != null && path.isStaticBlock()) {
-              props.push(path);
-            }
-          }
-        }
-        {
-          if (!props.length && !isDecorated) return;
-        }
-        const innerBinding = path.node.id;
-        let ref;
-        if (!innerBinding || !pathIsClassDeclaration) {
-          {
-            var _path$ensureFunctionN;
-            (_path$ensureFunctionN = path.ensureFunctionName) != null ? _path$ensureFunctionN : path.ensureFunctionName = require("@babel/traverse").NodePath.prototype.ensureFunctionName;
-          }
-          path.ensureFunctionName(false);
-          ref = path.scope.generateUidIdentifier((innerBinding == null ? void 0 : innerBinding.name) || "Class");
-        }
-        const classRefForDefine = ref != null ? ref : _core.types.cloneNode(innerBinding);
-        const privateNamesMap = (0, _fields.buildPrivateNamesMap)(classRefForDefine.name, privateFieldsAsSymbolsOrProperties != null ? privateFieldsAsSymbolsOrProperties : loose, props, file);
-        const privateNamesNodes = (0, _fields.buildPrivateNamesNodes)(privateNamesMap, privateFieldsAsProperties != null ? privateFieldsAsProperties : loose, privateFieldsAsSymbols != null ? privateFieldsAsSymbols : false, file);
-        (0, _fields.transformPrivateNamesUsage)(classRefForDefine, path, privateNamesMap, {
-          privateFieldsAsProperties: privateFieldsAsSymbolsOrProperties != null ? privateFieldsAsSymbolsOrProperties : loose,
-          noUninitializedPrivateFieldAccess,
-          noDocumentAll,
-          innerBinding
-        }, file);
-        let keysNodes, staticNodes, instanceNodes, lastInstanceNodeReturnsThis, pureStaticNodes, classBindingNode, wrapClass;
-        {
-          if (isDecorated) {
-            staticNodes = pureStaticNodes = keysNodes = [];
-            ({
-              instanceNodes,
-              wrapClass
-            } = (0, _decorators2.buildDecoratedClass)(classRefForDefine, path, elements, file));
-          } else {
-            keysNodes = (0, _misc.extractComputedKeys)(path, computedPaths, file);
-            ({
-              staticNodes,
-              pureStaticNodes,
-              instanceNodes,
-              lastInstanceNodeReturnsThis,
-              classBindingNode,
-              wrapClass
-            } = (0, _fields.buildFieldsInitNodes)(ref, path.node.superClass, props, privateNamesMap, file, setPublicClassFields != null ? setPublicClassFields : loose, privateFieldsAsSymbolsOrProperties != null ? privateFieldsAsSymbolsOrProperties : loose, noUninitializedPrivateFieldAccess, constantSuper != null ? constantSuper : loose, innerBinding));
-          }
-        }
-        if (instanceNodes.length > 0) {
-          (0, _misc.injectInitialization)(path, constructor, instanceNodes, (referenceVisitor, state) => {
-            {
-              if (isDecorated) return;
-            }
-            for (const prop of props) {
-              if (_core.types.isStaticBlock != null && _core.types.isStaticBlock(prop.node) || prop.node.static) continue;
-              prop.traverse(referenceVisitor, state);
-            }
-          }, lastInstanceNodeReturnsThis);
-        }
-        const wrappedPath = wrapClass(path);
-        wrappedPath.insertBefore([...privateNamesNodes, ...keysNodes]);
-        if (staticNodes.length > 0) {
-          wrappedPath.insertAfter(staticNodes);
-        }
-        if (pureStaticNodes.length > 0) {
-          wrappedPath.find(parent => parent.isStatement() || parent.isDeclaration()).insertAfter(pureStaticNodes);
-        }
-        if (classBindingNode != null && pathIsClassDeclaration) {
-          wrappedPath.insertAfter(classBindingNode);
-        }
-      },
-      ExportDefaultDeclaration(path, {
-        file
-      }) {
-        {
-          if (file.get(versionKey) !== "7.27.1") return;
-          const decl = path.get("declaration");
-          if (decl.isClassDeclaration() && (0, _decorators.hasDecorators)(decl.node)) {
-            if (decl.node.id) {
-              {
-                var _path$splitExportDecl;
-                (_path$splitExportDecl = path.splitExportDeclaration) != null ? _path$splitExportDecl : path.splitExportDeclaration = require("@babel/traverse").NodePath.prototype.splitExportDeclaration;
-              }
-              path.splitExportDeclaration();
-            } else {
-              decl.node.type = "ClassExpression";
-            }
-          }
-        }
-      }
-    }
+  return loadHelper(name).build(getDependency, bindingName, localBindings, adjustAst);
+}
+function minVersion(name) {
+  return loadHelper(name).minVersion;
+}
+function getDependencies(name) {
+  return loadHelper(name).getDependencies();
+}
+function isInternal(name) {
+  var _helpers$name;
+  return (_helpers$name = _helpersGenerated.default[name]) == null ? void 0 : _helpers$name.metadata.internal;
+}
+{
+  exports.ensure = name => {
+    loadHelper(name);
   };
 }
+const list = exports.list = Object.keys(_helpersGenerated.default).map(name => name.replace(/^_/, ""));
+var _default = exports.default = get;
 
 //# sourceMappingURL=index.js.map
