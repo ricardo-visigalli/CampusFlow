@@ -3,23 +3,26 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.default = _inherits;
-var _setPrototypeOf = require("./setPrototypeOf.js");
-function _inherits(subClass, superClass) {
-  if (typeof superClass !== "function" && superClass !== null) {
-    throw new TypeError("Super expression must either be null or a function");
-  }
-  subClass.prototype = Object.create(superClass && superClass.prototype, {
-    constructor: {
-      value: subClass,
-      writable: true,
-      configurable: true
+exports.default = inherits;
+var _index = require("../constants/index.js");
+var _inheritsComments = require("../comments/inheritsComments.js");
+function inherits(child, parent) {
+  if (!child || !parent) return child;
+  for (const key of _index.INHERIT_KEYS.optional) {
+    if (child[key] == null) {
+      child[key] = parent[key];
     }
-  });
-  Object.defineProperty(subClass, "prototype", {
-    writable: false
-  });
-  if (superClass) (0, _setPrototypeOf.default)(subClass, superClass);
+  }
+  for (const key of Object.keys(parent)) {
+    if (key.startsWith("_") && key !== "__clone") {
+      child[key] = parent[key];
+    }
+  }
+  for (const key of _index.INHERIT_KEYS.force) {
+    child[key] = parent[key];
+  }
+  (0, _inheritsComments.default)(child, parent);
+  return child;
 }
 
 //# sourceMappingURL=inherits.js.map

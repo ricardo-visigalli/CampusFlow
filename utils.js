@@ -1,189 +1,296 @@
 "use strict";
 
-exports.__esModule = true;
-exports.createUtilsGetter = createUtilsGetter;
-exports.getImportSource = getImportSource;
-exports.getRequireSource = getRequireSource;
-exports.has = has;
-exports.intersection = intersection;
-exports.resolveKey = resolveKey;
-exports.resolveSource = resolveSource;
-var _babel = _interopRequireWildcard(require("@babel/core"));
-function _interopRequireWildcard(e, t) { if ("function" == typeof WeakMap) var r = new WeakMap(), n = new WeakMap(); return (_interopRequireWildcard = function (e, t) { if (!t && e && e.__esModule) return e; var o, i, f = { __proto__: null, default: e }; if (null === e || "object" != typeof e && "function" != typeof e) return f; if (o = t ? n : r) { if (o.has(e)) return o.get(e); o.set(e, f); } for (const t in e) "default" !== t && {}.hasOwnProperty.call(e, t) && ((i = (o = Object.defineProperty) && Object.getOwnPropertyDescriptor(e, t)) && (i.get || i.set) ? o(f, t, i) : f[t] = e[t]); return f; })(e, t); }
-const {
-  types: t,
-  template: template
-} = _babel.default || _babel;
-function intersection(a, b) {
-  const result = new Set();
-  a.forEach(v => b.has(v) && result.add(v));
-  return result;
-}
-function has(object, key) {
-  return Object.prototype.hasOwnProperty.call(object, key);
-}
-function resolve(path, resolved = new Set()) {
-  if (resolved.has(path)) return;
-  resolved.add(path);
-  if (path.isVariableDeclarator()) {
-    if (path.get("id").isIdentifier()) {
-      return resolve(path.get("init"), resolved);
-    }
-  } else if (path.isReferencedIdentifier()) {
-    const binding = path.scope.getBinding(path.node.name);
-    if (!binding) return path;
-    if (!binding.constant) return;
-    return resolve(binding.path, resolved);
-  }
-  return path;
-}
-function resolveId(path) {
-  if (path.isIdentifier() && !path.scope.hasBinding(path.node.name, /* noGlobals */true)) {
-    return path.node.name;
-  }
-  const resolved = resolve(path);
-  if (resolved != null && resolved.isIdentifier()) {
-    return resolved.node.name;
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.allExpandedTypes = exports.VISITOR_KEYS = exports.NODE_UNION_SHAPES__PRIVATE = exports.NODE_PARENT_VALIDATIONS = exports.NODE_FIELDS = exports.FLIPPED_ALIAS_KEYS = exports.DEPRECATED_KEYS = exports.BUILDER_KEYS = exports.ALIAS_KEYS = void 0;
+exports.arrayOf = arrayOf;
+exports.arrayOfType = arrayOfType;
+exports.assertEach = assertEach;
+exports.assertNodeOrValueType = assertNodeOrValueType;
+exports.assertNodeType = assertNodeType;
+exports.assertOneOf = assertOneOf;
+exports.assertOptionalChainStart = assertOptionalChainStart;
+exports.assertShape = assertShape;
+exports.assertValueType = assertValueType;
+exports.chain = chain;
+exports.default = defineType;
+exports.defineAliasedType = defineAliasedType;
+exports.validate = validate;
+exports.validateArrayOfType = validateArrayOfType;
+exports.validateOptional = validateOptional;
+exports.validateOptionalType = validateOptionalType;
+exports.validateType = validateType;
+var _is = require("../validators/is.js");
+var _validate = require("../validators/validate.js");
+const VISITOR_KEYS = exports.VISITOR_KEYS = {};
+const ALIAS_KEYS = exports.ALIAS_KEYS = {};
+const FLIPPED_ALIAS_KEYS = exports.FLIPPED_ALIAS_KEYS = {};
+const NODE_FIELDS = exports.NODE_FIELDS = {};
+const BUILDER_KEYS = exports.BUILDER_KEYS = {};
+const DEPRECATED_KEYS = exports.DEPRECATED_KEYS = {};
+const NODE_PARENT_VALIDATIONS = exports.NODE_PARENT_VALIDATIONS = {};
+const NODE_UNION_SHAPES__PRIVATE = exports.NODE_UNION_SHAPES__PRIVATE = {};
+function getType(val) {
+  if (Array.isArray(val)) {
+    return "array";
+  } else if (val === null) {
+    return "null";
+  } else {
+    return typeof val;
   }
 }
-function resolveKey(path, computed = false) {
-  const {
-    scope
-  } = path;
-  if (path.isStringLiteral()) return path.node.value;
-  const isIdentifier = path.isIdentifier();
-  if (isIdentifier && !(computed || path.parent.computed)) {
-    return path.node.name;
-  }
-  if (computed && path.isMemberExpression() && path.get("object").isIdentifier({
-    name: "Symbol"
-  }) && !scope.hasBinding("Symbol", /* noGlobals */true)) {
-    const sym = resolveKey(path.get("property"), path.node.computed);
-    if (sym) return "Symbol." + sym;
-  }
-  if (isIdentifier ? scope.hasBinding(path.node.name, /* noGlobals */true) : path.isPure()) {
-    const {
-      value
-    } = path.evaluate();
-    if (typeof value === "string") return value;
-  }
-}
-function resolveSource(obj) {
-  if (obj.isMemberExpression() && obj.get("property").isIdentifier({
-    name: "prototype"
-  })) {
-    const id = resolveId(obj.get("object"));
-    if (id) {
-      return {
-        id,
-        placement: "prototype"
-      };
-    }
-    return {
-      id: null,
-      placement: null
-    };
-  }
-  const id = resolveId(obj);
-  if (id) {
-    return {
-      id,
-      placement: "static"
-    };
-  }
-  const path = resolve(obj);
-  switch (path == null ? void 0 : path.type) {
-    case "RegExpLiteral":
-      return {
-        id: "RegExp",
-        placement: "prototype"
-      };
-    case "FunctionExpression":
-      return {
-        id: "Function",
-        placement: "prototype"
-      };
-    case "StringLiteral":
-      return {
-        id: "String",
-        placement: "prototype"
-      };
-    case "NumberLiteral":
-      return {
-        id: "Number",
-        placement: "prototype"
-      };
-    case "BooleanLiteral":
-      return {
-        id: "Boolean",
-        placement: "prototype"
-      };
-    case "ObjectExpression":
-      return {
-        id: "Object",
-        placement: "prototype"
-      };
-    case "ArrayExpression":
-      return {
-        id: "Array",
-        placement: "prototype"
-      };
-  }
+function validate(validate) {
   return {
-    id: null,
-    placement: null
+    validate
   };
 }
-function getImportSource({
-  node
-}) {
-  if (node.specifiers.length === 0) return node.source.value;
+function validateType(...typeNames) {
+  return validate(assertNodeType(...typeNames));
 }
-function getRequireSource({
-  node
-}) {
-  if (!t.isExpressionStatement(node)) return;
-  const {
-    expression
-  } = node;
-  if (t.isCallExpression(expression) && t.isIdentifier(expression.callee) && expression.callee.name === "require" && expression.arguments.length === 1 && t.isStringLiteral(expression.arguments[0])) {
-    return expression.arguments[0].value;
-  }
+function validateOptional(validate) {
+  return {
+    validate,
+    optional: true
+  };
 }
-function hoist(node) {
-  // @ts-expect-error
-  node._blockHoist = 3;
-  return node;
+function validateOptionalType(...typeNames) {
+  return {
+    validate: assertNodeType(...typeNames),
+    optional: true
+  };
 }
-function createUtilsGetter(cache) {
-  return path => {
-    const prog = path.findParent(p => p.isProgram());
-    return {
-      injectGlobalImport(url, moduleName) {
-        cache.storeAnonymous(prog, url, moduleName, (isScript, source) => {
-          return isScript ? template.statement.ast`require(${source})` : t.importDeclaration([], source);
-        });
-      },
-      injectNamedImport(url, name, hint = name, moduleName) {
-        return cache.storeNamed(prog, url, name, moduleName, (isScript, source, name) => {
-          const id = prog.scope.generateUidIdentifier(hint);
-          return {
-            node: isScript ? hoist(template.statement.ast`
-                  var ${id} = require(${source}).${name}
-                `) : t.importDeclaration([t.importSpecifier(id, name)], source),
-            name: id.name
-          };
-        });
-      },
-      injectDefaultImport(url, hint = url, moduleName) {
-        return cache.storeNamed(prog, url, "default", moduleName, (isScript, source) => {
-          const id = prog.scope.generateUidIdentifier(hint);
-          return {
-            node: isScript ? hoist(template.statement.ast`var ${id} = require(${source})`) : t.importDeclaration([t.importDefaultSpecifier(id)], source),
-            name: id.name
-          };
-        });
+function arrayOf(elementType) {
+  return chain(assertValueType("array"), assertEach(elementType));
+}
+function arrayOfType(...typeNames) {
+  return arrayOf(assertNodeType(...typeNames));
+}
+function validateArrayOfType(...typeNames) {
+  return validate(arrayOfType(...typeNames));
+}
+function assertEach(callback) {
+  const childValidator = process.env.BABEL_TYPES_8_BREAKING ? _validate.validateChild : () => {};
+  function validator(node, key, val) {
+    if (!Array.isArray(val)) return;
+    let i = 0;
+    const subKey = {
+      toString() {
+        return `${key}[${i}]`;
       }
     };
+    for (; i < val.length; i++) {
+      const v = val[i];
+      callback(node, subKey, v);
+      childValidator(node, subKey, v);
+    }
+  }
+  validator.each = callback;
+  return validator;
+}
+function assertOneOf(...values) {
+  function validate(node, key, val) {
+    if (!values.includes(val)) {
+      throw new TypeError(`Property ${key} expected value to be one of ${JSON.stringify(values)} but got ${JSON.stringify(val)}`);
+    }
+  }
+  validate.oneOf = values;
+  return validate;
+}
+const allExpandedTypes = exports.allExpandedTypes = [];
+function assertNodeType(...types) {
+  const expandedTypes = new Set();
+  allExpandedTypes.push({
+    types,
+    set: expandedTypes
+  });
+  function validate(node, key, val) {
+    const valType = val == null ? void 0 : val.type;
+    if (valType != null) {
+      if (expandedTypes.has(valType)) {
+        (0, _validate.validateChild)(node, key, val);
+        return;
+      }
+      if (valType === "Placeholder") {
+        for (const type of types) {
+          if ((0, _is.default)(type, val)) {
+            (0, _validate.validateChild)(node, key, val);
+            return;
+          }
+        }
+      }
+    }
+    throw new TypeError(`Property ${key} of ${node.type} expected node to be of a type ${JSON.stringify(types)} but instead got ${JSON.stringify(valType)}`);
+  }
+  validate.oneOfNodeTypes = types;
+  return validate;
+}
+function assertNodeOrValueType(...types) {
+  function validate(node, key, val) {
+    const primitiveType = getType(val);
+    for (const type of types) {
+      if (primitiveType === type || (0, _is.default)(type, val)) {
+        (0, _validate.validateChild)(node, key, val);
+        return;
+      }
+    }
+    throw new TypeError(`Property ${key} of ${node.type} expected node to be of a type ${JSON.stringify(types)} but instead got ${JSON.stringify(val == null ? void 0 : val.type)}`);
+  }
+  validate.oneOfNodeOrValueTypes = types;
+  return validate;
+}
+function assertValueType(type) {
+  function validate(node, key, val) {
+    if (getType(val) === type) {
+      return;
+    }
+    throw new TypeError(`Property ${key} expected type of ${type} but got ${getType(val)}`);
+  }
+  validate.type = type;
+  return validate;
+}
+function assertShape(shape) {
+  const keys = Object.keys(shape);
+  function validate(node, key, val) {
+    const errors = [];
+    for (const property of keys) {
+      try {
+        (0, _validate.validateField)(node, property, val[property], shape[property]);
+      } catch (error) {
+        if (error instanceof TypeError) {
+          errors.push(error.message);
+          continue;
+        }
+        throw error;
+      }
+    }
+    if (errors.length) {
+      throw new TypeError(`Property ${key} of ${node.type} expected to have the following:\n${errors.join("\n")}`);
+    }
+  }
+  validate.shapeOf = shape;
+  return validate;
+}
+function assertOptionalChainStart() {
+  function validate(node) {
+    var _current;
+    let current = node;
+    while (node) {
+      const {
+        type
+      } = current;
+      if (type === "OptionalCallExpression") {
+        if (current.optional) return;
+        current = current.callee;
+        continue;
+      }
+      if (type === "OptionalMemberExpression") {
+        if (current.optional) return;
+        current = current.object;
+        continue;
+      }
+      break;
+    }
+    throw new TypeError(`Non-optional ${node.type} must chain from an optional OptionalMemberExpression or OptionalCallExpression. Found chain from ${(_current = current) == null ? void 0 : _current.type}`);
+  }
+  return validate;
+}
+function chain(...fns) {
+  function validate(...args) {
+    for (const fn of fns) {
+      fn(...args);
+    }
+  }
+  validate.chainOf = fns;
+  if (fns.length >= 2 && "type" in fns[0] && fns[0].type === "array" && !("each" in fns[1])) {
+    throw new Error(`An assertValueType("array") validator can only be followed by an assertEach(...) validator.`);
+  }
+  return validate;
+}
+const validTypeOpts = new Set(["aliases", "builder", "deprecatedAlias", "fields", "inherits", "visitor", "validate", "unionShape"]);
+const validFieldKeys = new Set(["default", "optional", "deprecated", "validate"]);
+const store = {};
+function defineAliasedType(...aliases) {
+  return (type, opts = {}) => {
+    let defined = opts.aliases;
+    if (!defined) {
+      var _store$opts$inherits$;
+      if (opts.inherits) defined = (_store$opts$inherits$ = store[opts.inherits].aliases) == null ? void 0 : _store$opts$inherits$.slice();
+      defined != null ? defined : defined = [];
+      opts.aliases = defined;
+    }
+    const additional = aliases.filter(a => !defined.includes(a));
+    defined.unshift(...additional);
+    defineType(type, opts);
   };
 }
+function defineType(type, opts = {}) {
+  const inherits = opts.inherits && store[opts.inherits] || {};
+  let fields = opts.fields;
+  if (!fields) {
+    fields = {};
+    if (inherits.fields) {
+      const keys = Object.getOwnPropertyNames(inherits.fields);
+      for (const key of keys) {
+        const field = inherits.fields[key];
+        const def = field.default;
+        if (Array.isArray(def) ? def.length > 0 : def && typeof def === "object") {
+          throw new Error("field defaults can only be primitives or empty arrays currently");
+        }
+        fields[key] = {
+          default: Array.isArray(def) ? [] : def,
+          optional: field.optional,
+          deprecated: field.deprecated,
+          validate: field.validate
+        };
+      }
+    }
+  }
+  const visitor = opts.visitor || inherits.visitor || [];
+  const aliases = opts.aliases || inherits.aliases || [];
+  const builder = opts.builder || inherits.builder || opts.visitor || [];
+  for (const k of Object.keys(opts)) {
+    if (!validTypeOpts.has(k)) {
+      throw new Error(`Unknown type option "${k}" on ${type}`);
+    }
+  }
+  if (opts.deprecatedAlias) {
+    DEPRECATED_KEYS[opts.deprecatedAlias] = type;
+  }
+  for (const key of visitor.concat(builder)) {
+    fields[key] = fields[key] || {};
+  }
+  for (const key of Object.keys(fields)) {
+    const field = fields[key];
+    if (field.default !== undefined && !builder.includes(key)) {
+      field.optional = true;
+    }
+    if (field.default === undefined) {
+      field.default = null;
+    } else if (!field.validate && field.default != null) {
+      field.validate = assertValueType(getType(field.default));
+    }
+    for (const k of Object.keys(field)) {
+      if (!validFieldKeys.has(k)) {
+        throw new Error(`Unknown field key "${k}" on ${type}.${key}`);
+      }
+    }
+  }
+  VISITOR_KEYS[type] = opts.visitor = visitor;
+  BUILDER_KEYS[type] = opts.builder = builder;
+  NODE_FIELDS[type] = opts.fields = fields;
+  ALIAS_KEYS[type] = opts.aliases = aliases;
+  aliases.forEach(alias => {
+    FLIPPED_ALIAS_KEYS[alias] = FLIPPED_ALIAS_KEYS[alias] || [];
+    FLIPPED_ALIAS_KEYS[alias].push(type);
+  });
+  if (opts.validate) {
+    NODE_PARENT_VALIDATIONS[type] = opts.validate;
+  }
+  if (opts.unionShape) {
+    NODE_UNION_SHAPES__PRIVATE[type] = opts.unionShape;
+  }
+  store[type] = opts;
+}
+
+//# sourceMappingURL=utils.js.map
